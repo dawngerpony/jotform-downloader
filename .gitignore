@@ -1,0 +1,7 @@
+jotform-api-python
+private.md
+.env
+*.pyc
+.*.swp
+api.key
+.idea
