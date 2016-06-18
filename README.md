@@ -4,6 +4,8 @@ JotForm Downloader
 Uses the jotform-api-python library to download submissions from multiple forms, using the `shelve` library to cache data
 to avoid exceeding the JotForm API quota limit.
 
+[![CircleCI](https://circleci.com/gh/duffj/jotform-downloader.svg?style=svg)](https://circleci.com/gh/duffj/jotform-downloader)
+
 
 Developer Setup
 ---------------
