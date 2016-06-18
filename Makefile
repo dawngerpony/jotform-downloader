@@ -8,4 +8,4 @@ test:
 	nose2
 
 all:
-    nose2
+	nose2
