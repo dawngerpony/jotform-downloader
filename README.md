@@ -1,7 +1,9 @@
 JotForm Downloader
 ==================
 
-Uses the jotform-api-python library to download submissions from multiple forms.
+Uses the jotform-api-python library to download submissions from multiple forms, using the `shelve` library to cache data
+to avoid exceeding the JotForm API quota limit.
+
 
 Developer Setup
 ---------------
@@ -23,7 +25,9 @@ Copy and paste this into a shell:
 Revision History
 ----------------
 
+* 0.1 - print data structures to JSON, cache using the `shelve` library.
 * 0.0 - current (not yet working)
+
 
 References
 ----------

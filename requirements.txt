@@ -1,0 +1,8 @@
+jotform
+fabric
+git+git://github.com/jotform/jotform-api-python.git
+requests==2.10.0
+simplejson==3.8.2
+bs4==0.0.1
+nose==1.3.7
+nose2==0.6.4

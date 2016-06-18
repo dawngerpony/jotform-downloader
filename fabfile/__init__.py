@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from fabric.api import task
 from fabric.utils import puts, error
 from fabric.utils import warn as fabric_warn
-from jotform import *
+from jotformlib import *
 from urlparse import urlparse
 
 JOTFORM_API_KEY_ENVVAR = 'JOTFORM_API_KEY'
@@ -79,7 +79,12 @@ def get_submission_data_for_all_forms_in_folder(folder_name='CIAFF2016_final', c
     if not client:
         client = _get_client()
     folders = client.get_folders()
-    folder = [f for f in folders['subfolders'] if f['name'] == folder_name][0]
+    filtered_list = [f for f in folders['subfolders'] if f['name'] == folder_name]
+    if len(filtered_list) > 1:
+        raise Exception("Duplicate folder names found!")
+    if len(filtered_list) < 1:
+        raise Exception("No folders with name=\"{}\" found.".format(folder_name))
+    folder = filtered_list[0]
     forms = folder['forms']
     data = []
     for form in forms:
@@ -100,29 +105,65 @@ def get_submissions_for_form(form, exclude_sample_submissions=True, client=None)
 
 
 @task
-def download_all_data(folder='CIAFF2016_final', debug=False):
-    forms_and_submissions = get_submission_data_for_all_forms_in_folder(folder)
+def download_all_data():
+    client = _get_client()
     timestamp = int(time.time())
-    with open('all_data-{}.json'.format(timestamp), 'w') as f:
-        simplejson.dump(forms_and_submissions, f)
-        print "Data written to {}".format(f.name)
+    forms = client.get_forms()
+    with open('data-dump-{}-forms.json'.format(timestamp), 'w') as f:
+        simplejson.dump(forms, f, indent=2)
+        puts("Forms data written to {}".format(f.name))
+    submissions = client.get_submissions()
+    with open('data-dump-{}-submissions.json'.format(timestamp), 'w') as f:
+        simplejson.dump(submissions, f, indent=2)
+        puts("Submissions data written to {}".format(f.name))
+    folders = client.get_folders()
+    with open('data-dump-{}-folders.json'.format(timestamp), 'w') as f:
+        simplejson.dump(folders, f, indent=2)
+        puts("Folders data written to {}".format(f.name))
 
 
-@task
-def print_submissions_as_csv(filename='all_data.json', debug=False, download_files=True):
-    """ Takes submissions data from JotForm API and converts it to CSV.
-    """
-    if debug:
-        puts("debug={}, download_files={}".format(debug, download_files))
-    with open(filename) as f:
-        submissions_response_object = simplejson.load(f)
-    execution_id = int(time.time())
-    form_ids = list(set([s['form_id'] for s in submissions_response_object['content']]))
-    for form_id in form_ids:
-        submissions = [s for s in submissions_response_object['content'] if s['form_id'] == form_id]
-        generate_csv_for_form(execution_id, form_id, submissions, download_files)
-    log("{} CSV files written to disk".format(len(form_ids)))
+def get_filenames(timestamp):
+    return 'data-dump-{}-forms.json'.format(timestamp), \
+           'data-dump-{}-folders.json'.format(timestamp), \
+           'data-dump-{}-submissions.json'.format(timestamp)
 
+
+# @task
+# def print_submissions_as_csv(timestamp, folder_name=debug=False, download_files=True):
+#     """ Takes submissions data from JotForm API and converts it to CSV.
+#     """
+#     execution_id = int(time.time())
+#     if debug:
+#         puts("debug={}, download_files={}".format(debug, download_files))
+#     forms_data, folder_data, submisssions_data = load_data(timestamp)
+#
+#     # form_ids = list(set([s['form_id'] for s in submissions_response_object['content']]))
+#     # for form_id in form_ids:
+#     #     submissions = [s for s in submissions_response_object['content'] if s['form_id'] == form_id]
+#     #     generate_csv_for_form(execution_id, form_id, submissions, download_files)
+#     # log("{} CSV files written to disk".format(len(form_ids)))
+
+
+def load_data(timestamp):
+    forms_filename, submissions_filename, folders_filename = get_filenames(timestamp)
+    with open(forms_filename) as f:
+        forms_data = simplejson.load(f)
+    with open(folders_filename) as f:
+        folders_data = simplejson.load(f)
+    with open(submissions_filename) as f:
+        submissions_data = simplejson.load(f)
+    return forms_data, folders_data, submissions_data
+
+
+def get_folder_id(root, folder_name):
+    if root['name'] == folder_name:
+        return root['id']
+    else:
+        for f in root['subfolders']:
+            if f['name'] == folder_name:
+                return f['id']
+            else:
+                return get_subfolder_id(f['subfolders'])
 
 def generate_csv_for_form(execution_id, form_id, submissions, download_files=True):
     (column_names, submissions) = rows_to_column_names(submissions)
@@ -138,6 +179,7 @@ def generate_csv_for_form(execution_id, form_id, submissions, download_files=Tru
         writer.writeheader()
         writer.writerows(rows)
     log("{} rows written to disk. Filename=\"{}\"".format(len(rows), output_filename))
+
 
 def answers_as_dict(submission, execution_id=None, download_files=True):
     """ 72 = photo

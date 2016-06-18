@@ -4,9 +4,15 @@ Notes
 * Notes go here!
 
 
+CIAFF 2016 folders:
+
+CIAFF2016_DJ
+CIAFF2016_BAND
+
 
     curl -vsX GET "https://eu-api.jotform.com/user?apiKey=$JOTFORM_API_KEY"
     curl -vsX GET "https://eu-api.jotform.com/user/submissions?apiKey=$JOTFORM_API_KEY" > all_submissions-`date +%s`.json
+
 
 Sample Data
 -----------
