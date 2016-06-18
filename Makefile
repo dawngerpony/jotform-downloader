@@ -6,3 +6,6 @@ setup:
 
 test:
 	nose2
+
+all:
+    nose2
