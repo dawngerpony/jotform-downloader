@@ -14,10 +14,17 @@ class JotformClient:
     cache = None
     data_client = None
 
-    def __init__(self, cache_filename=DEFAULT_CACHE_FILENAME, data_client=None):
+    def __init__(self, cache_filename=DEFAULT_CACHE_FILENAME, data_client=None, api_key=None):
         self.cache_filename = cache_filename
         self.cache = shelve.open(self.cache_filename)
-        self.data_client = JotformAPIClient(os.environ[JOTFORM_API_KEY_ENVVAR], baseUrl=JOTFORM_API_BASE_URL)
+        if api_key is None:
+            api_key = os.environ[JOTFORM_API_KEY_ENVVAR]
+        self.data_client = JotformAPIClient(api_key, baseUrl=JOTFORM_API_BASE_URL)
+
+    def download_all(self):
+        self.get_submissions()
+        self.get_folders()
+        self.get_forms()
 
     def _cache_store(self, key, data):
         """ Store data in the cache.
@@ -62,20 +69,25 @@ class JotformClient:
             return self.data_client.get_folders()
 
     def find_folder(self, folder_name):
+        # print "folder_name = {}".format(folder_name)
+        root_node = self.get_folders()
+        return find_folder_inner(root_node, folder_name)
 
-        def find_folder_inner(node):
-            for f in node.get('subfolders', []):
-                if f['name'] == folder_name:
-                    return node
-                else:
-                    child = find_folder_inner(f)
-                    if child is not None:
-                        return child
-            return None
 
-        folders = self.get_folders()
-
-        return find_folder_inner(folders['subfolders'])
+def find_folder_inner(node, fname):
+    # print "Processing folder {} looking for {}".format(node['name'], fname)
+    if node['name'] == fname:
+        # print "Found!"
+        return node
+    if 'subfolders' in node:
+        for f in node['subfolders']:
+            if f['name'] == fname:
+                return f
+            else:
+                child = find_folder_inner(f, fname)
+                if child is not None:
+                    return child
+        return None
 
 class JotformDataClient:
 

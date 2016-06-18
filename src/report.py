@@ -8,15 +8,22 @@ REPORTS = [
 ]
 
 
-def report_print_zero_submissions(client, folder_name='CIAFF2016_final', config=None):
+def report_print_zero_submissions(client, config=None):
+    print_zero_submissions(client, config, folder_name='CIAFF2016_DJ')
+    print_zero_submissions(client, config, folder_name='CIAFF2016_BAND')
+
+
+def print_zero_submissions(client, config, folder_name):
     submissions = client.get_submissions()
-    folders = client.get_folders()
-    folder = [f for f in folders['subfolders'] if f['name'] == folder_name][0]
+    # print "Looking for folder_name={0}".format(folder_name)
+    folder = client.find_folder(folder_name)
+    # print simplejson.dumps(folder, indent=2)
     forms = folder['forms']
+    # print "Forms: {}".format(simplejson.dumps(forms, indent=2))
     print 'form_id,form_name,num_submissions'
     for form in forms:
-        submissions = get_submissions(form)
-        if len(submissions) == 0:
+        # print form['last_submission']
+        if form['last_submission'] is None:
             print "{0},{1},{2}".format(form['id'], form['title'], len(submissions))
 
     print ""
